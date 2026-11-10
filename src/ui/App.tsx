@@ -1,5 +1,25 @@
 import {useEffect, useState, type JSX} from "react"
-import type {BridgeStatus, Settings, State} from "../shared/channels"
+import type {BridgeStatus, MediaStatus, Settings, State} from "../shared/channels"
+
+const MEDIA_TEXT: Record<MediaStatus, string> = {
+  unused: "Not used",
+  unreachable: "Can't reach the media feed",
+  off: "Media is off in Media Bridge",
+  none: "Nothing playing",
+  ok: "OK",
+}
+
+function Toggle(props: {label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void}) {
+  return (
+    <label className="toggle">
+      <span>
+        <span className="toggle-label">{props.label}</span>
+        {props.hint ? <span className="hint">{props.hint}</span> : null}
+      </span>
+      <input type="checkbox" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
+    </label>
+  )
+}
 
 const STATUS_TEXT: Record<BridgeStatus, string> = {
   paused: "Paused in this app",
@@ -120,6 +140,31 @@ export function App(): JSX.Element {
       </section>
 
       <section className="card">
+        <h2>Show on glasses</h2>
+        <Toggle
+          label="Track & source"
+          hint="Title on top, then artist and app."
+          checked={s.showTrackInfo}
+          onChange={(v) => set({showTrackInfo: v})}
+        />
+        <Toggle
+          label="Time bar"
+          hint="Elapsed / total, time left, and a progress bar at the bottom."
+          checked={s.showTimeBar}
+          onChange={(v) => set({showTimeBar: v})}
+        />
+        {(s.showTrackInfo || s.showTimeBar) && (stats.mediaStatus === "off" || stats.mediaStatus === "unreachable") ? (
+          <p className="error">
+            {MEDIA_TEXT[stats.mediaStatus]}. Turn on "Enable media bridge" in the Media Bridge app (it needs
+            notification access).
+          </p>
+        ) : null}
+        <p className="hint">
+          These use rows the captions would otherwise get. They stay up for 30 s after you pause, then clear.
+        </p>
+      </section>
+
+      <section className="card">
         <h2>Layout</h2>
         <NumberField
           label="Rows on glasses"
@@ -203,6 +248,11 @@ export function App(): JSX.Element {
           </dd>
           <dt>Engine</dt>
           <dd>{stats.engine || "—"}</dd>
+          <dt>Media feed</dt>
+          <dd>
+            {MEDIA_TEXT[stats.mediaStatus]}
+            {stats.mediaError ? ` (${stats.mediaError})` : ""}
+          </dd>
         </dl>
         <label className="field">
           <span className="field-label">Bridge address</span>

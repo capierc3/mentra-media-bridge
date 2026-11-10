@@ -20,9 +20,23 @@ export interface Settings {
   charsPerRow: number
   /** Clear the glasses after this many seconds with no new caption text (0 = never). */
   clearAfterSec: number
+  /** Show the track title and source (artist · app) at the top. */
+  showTrackInfo: boolean
+  /** Show elapsed / total / remaining time and a progress bar at the bottom. */
+  showTimeBar: boolean
   /** Bridge caption endpoint. */
   bridgeUrl: string
+  /** Bridge now-playing endpoint. */
+  mediaUrl: string
 }
+
+/** What the bridge's media feed (port 8766) is telling us. */
+export type MediaStatus =
+  | "unused" // track info and time bar both turned off
+  | "unreachable"
+  | "off" // the Media switch is off in the bridge app
+  | "none" // nothing is playing
+  | "ok"
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -32,7 +46,10 @@ export const DEFAULT_SETTINGS: Settings = {
   rows: 4,
   charsPerRow: 38,
   clearAfterSec: 8,
+  showTrackInfo: true,
+  showTimeBar: true,
   bridgeUrl: "http://127.0.0.1:8767/caption",
+  mediaUrl: "http://127.0.0.1:8766/media",
 }
 
 /** Where things stand with the bridge, as shown on the phone screen. */
@@ -62,6 +79,8 @@ export interface Stats {
   display: {width?: number; height?: number} | null
   /** Exactly what is on the glasses right now. */
   preview: string
+  mediaStatus: MediaStatus
+  mediaError: string | null
 }
 
 export interface State {
