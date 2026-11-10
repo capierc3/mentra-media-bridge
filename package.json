@@ -6,7 +6,9 @@
     "build": "bun run build.ts",
     "typecheck": "tsc --noEmit",
     "release": "mentra-miniapp release",
-    "pack": "mentra-miniapp pack"
+    "pack": "mentra-miniapp pack",
+    "pack:win": "bun run scripts/pack-win.ts",
+    "release:win": "bun run scripts/pack-win.ts && mentra-miniapp release"
   },
   "dependencies": {
     "@mentra/miniapp": "0.3.0-dev.0",

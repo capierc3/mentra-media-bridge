@@ -27,6 +27,24 @@ phone audio → Media Bridge (Android, on-device speech-to-text)
    the same Wi-Fi. Or, with the phone plugged in over USB and `adb` installed, run
    `bun dev --usb`.
 
+## Installing on the phone (no PC needed afterwards)
+
+A release build installs permanently and runs without the dev server.
+
+1. Bump `version` in `miniapp.json` (the phone only accepts the same or a
+   newer version than what's installed).
+2. Stop `bun dev` if it's running, then:
+
+   ```bash
+   bun run release:win
+   ```
+
+   On Windows this packs with the built-in `tar.exe`, because the Mentra CLI's
+   own packing step needs a `zip` program Windows doesn't have. On macOS or
+   Linux, `bun run release` is enough.
+3. Scan the QR code it prints (same menu as above). Press Ctrl+C once the
+   phone shows it installed.
+
 ## Using it
 
 - Captions start automatically. A short press on the glasses button pauses
