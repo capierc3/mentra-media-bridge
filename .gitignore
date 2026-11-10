@@ -2,6 +2,8 @@ node_modules/
 dist/
 build/
 *.zip
+# The GitHub Pages install site serves this one.
+!docs/bundle.zip
 .env
 .env.local
 .DS_Store
