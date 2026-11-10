@@ -23,6 +23,7 @@ import {buildRows, type BridgeCaption} from "./captions"
 import {
   MediaClock,
   buildTimeBar,
+  textBar,
   hasTrack,
   sourceLine,
   truncate,
@@ -35,23 +36,24 @@ const MEDIA_POLL_MS = 1000
 
 // Layout, in device pixels. The Even NowPlaying app spaces G2 text rows ~36 px apart.
 const ROW_H = 36
-const BAR_H = 10
-const BAR_GAP = 4
 
 /** After pausing, keep the title and time bar up this long, then clear. */
 const PAUSED_INFO_MS = 30_000
+
+/** Keep showing the last good now-playing info this long when the feed hiccups. */
+const MEDIA_HOLD_MS = 5000
 
 /** Everything that can be on the glasses. Empty strings mean "leave it out". */
 interface Scene {
   title: string
   source: string
   captions: string
+  /** Text progress bar row, e.g. "████▒▒▒▒▒▒". */
+  bar: string
   time: string
-  /** 0..1, or null for no progress bar. */
-  progress: number | null
 }
 
-const EMPTY_SCENE: Scene = {title: "", source: "", captions: "", time: "", progress: null}
+const EMPTY_SCENE: Scene = {title: "", source: "", captions: "", bar: "", time: ""}
 
 /** Keeps values from the settings screen within sane bounds. */
 function clampSettings(s: Settings): Settings {
@@ -102,12 +104,6 @@ async function fetchJson(url: string): Promise<unknown> {
   } finally {
     if (timer) clearTimeout(timer)
   }
-}
-
-/** A 20-character text version of the progress bar, for the phone preview. */
-function previewBar(p: number): string {
-  const filled = Math.round(p * 20)
-  return "[" + "■".repeat(filled) + "□".repeat(20 - filled) + "]"
 }
 
 registerMiniapp(async (session) => {
@@ -171,16 +167,15 @@ registerMiniapp(async (session) => {
   }
 
   /** Pixel rows used by the top and bottom sections, given what is in the scene. */
-  function layout(hasTitle: boolean, hasSource: boolean, hasTime: boolean, hasBar: boolean) {
+  function layout(s: Pick<Scene, "title" | "source" | "bar" | "time">) {
     const {w, h} = canvas()
-    const top = (hasTitle ? ROW_H : 0) + (hasSource ? ROW_H : 0)
-    const bottomH = (hasTime ? ROW_H : 0) + (hasBar ? BAR_H + BAR_GAP : 0)
+    const top = (s.title ? ROW_H : 0) + (s.source ? ROW_H : 0)
+    const bottomH = (s.bar ? ROW_H : 0) + (s.time ? ROW_H : 0)
     return {w, h, top, captionsH: Math.max(0, h - top - bottomH)}
   }
 
   function buildElements(scene: Scene): RenderElement[] {
-    const hasBar = !!scene.time && scene.progress !== null
-    const {w, h, top, captionsH} = layout(!!scene.title, !!scene.source, !!scene.time, hasBar)
+    const {w, h, top, captionsH} = layout(scene)
     const els: RenderElement[] = []
     const line = (id: string, y: number, text: string): RenderElement => ({
       type: "text",
@@ -207,35 +202,34 @@ registerMiniapp(async (session) => {
       })
     }
 
+    let by = h
     if (scene.time) {
-      let by = h - ROW_H
-      if (hasBar) {
-        const barY = by - BAR_GAP - BAR_H
-        const barW = w - 4
-        els.push({type: "rect", id: "bar", box: {x: 2, y: barY, w: barW, h: BAR_H}, style: {border: 1, radius: 3}})
-        const fillW = Math.round(barW * (scene.progress ?? 0))
-        if (fillW >= BAR_H) {
-          // No fill option on rects, so a border half the bar height fills it in.
-          els.push({
-            type: "rect",
-            id: "barfill",
-            box: {x: 2, y: barY, w: fillW, h: BAR_H},
-            style: {border: Math.ceil(BAR_H / 2), radius: 3},
-          })
-        }
-      }
+      by -= ROW_H
       els.push(line("time", by, scene.time))
+    }
+    if (scene.bar) {
+      by -= ROW_H
+      els.push({
+        type: "text",
+        id: "bar",
+        box: {x: 0, y: by, w, h: ROW_H},
+        text: scene.bar,
+        style: {breakMode: "character", overflow: "clip"},
+      })
     }
     return els
   }
 
   function previewText(scene: Scene): string {
-    const parts = [scene.title, scene.source, scene.captions].filter(Boolean)
-    if (scene.time) {
-      if (scene.progress !== null) parts.push(previewBar(scene.progress))
-      parts.push(scene.time)
-    }
-    return parts.join("\n")
+    return [scene.title, scene.source, scene.captions, scene.bar, scene.time].filter(Boolean).join("\n")
+  }
+
+  /** Logs when the glasses host adjusts or drops elements (each distinct case once). */
+  let loggedRenderIssue = ""
+  function noteRenderResult(r: {status: string; reason?: string; degraded?: boolean; dropped?: string[]}) {
+    const issue = r.status !== "displayed" || r.degraded ? JSON.stringify(r) : ""
+    if (issue && issue !== loggedRenderIssue) console.warn(`render adjusted by host: ${issue}`)
+    loggedRenderIssue = issue
   }
 
   function drawNow(scene: Scene) {
@@ -252,6 +246,7 @@ registerMiniapp(async (session) => {
     p.then((r) => {
       stats.lastRenderStatus = r.reason ? `${r.status} (${r.reason})` : r.status
       stats.lastRenderDegraded = !!r.degraded
+      noteRenderResult(r)
     })
   }
 
@@ -372,24 +367,25 @@ registerMiniapp(async (session) => {
 
     let title = ""
     let source = ""
+    let bar = ""
     let time = ""
-    let progress: number | null = null
     if (showMedia && m) {
       if (settings.showTrackInfo) {
         title = truncate(m.title || m.album || "", settings.charsPerRow)
         source = truncate(sourceLine(m), settings.charsPerRow)
       }
       if (settings.showTimeBar) {
-        const bar = buildTimeBar(m, clock.positionMs(now))
-        time = bar.text
-        progress = bar.progress
+        const tb = buildTimeBar(m, clock.positionMs(now))
+        time = tb.text
+        // Block glyphs are about twice as wide as letters, so half the row length fits.
+        if (tb.progress !== null) bar = textBar(tb.progress, Math.floor(settings.charsPerRow / 2))
       }
     }
 
-    const {captionsH} = layout(!!title, !!source, !!time, !!time && progress !== null)
+    const {captionsH} = layout({title, source, bar, time})
     const maxRows = Math.max(1, Math.min(settings.rows, Math.floor(captionsH / ROW_H)))
     const captions = composeCaptions(maxRows, !!(title || source || time))
-    return {title, source, captions, time, progress}
+    return {title, source, captions, bar, time}
   }
 
   function refresh() {
@@ -457,19 +453,30 @@ registerMiniapp(async (session) => {
       clock.update(null, Date.now())
       return
     }
+    const now = Date.now()
     try {
       const m = (await fetchJson(settings.mediaUrl)) as BridgeMedia
       stats.mediaError = null
       stats.mediaStatus = m.enabled === false ? "off" : hasTrack(m) ? "ok" : "none"
-      const now = Date.now()
+      if (!hasTrack(m) && holdLastMedia(now)) return
       clock.update(m, now)
+      if (hasTrack(m)) lastGoodMediaAt = now
       if (m.state === "playing") notPlayingSince = 0
       else if (!notPlayingSince) notPlayingSince = now
     } catch (e) {
       stats.mediaStatus = "unreachable"
       stats.mediaError = e instanceof Error ? e.message : String(e)
-      clock.update(null, Date.now())
+      if (!holdLastMedia(now)) clock.update(null, now)
     }
+  }
+
+  let lastGoodMediaAt = 0
+  /**
+   * Briefly keeps the last good track info through a failed check or a blip
+   * where the player vanishes, so the layout doesn't jump around and flash.
+   */
+  function holdLastMedia(now: number): boolean {
+    return hasTrack(clock.media) && now - lastGoodMediaAt < MEDIA_HOLD_MS
   }
 
   async function mediaLoop() {

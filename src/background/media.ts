@@ -90,12 +90,26 @@ export interface TimeBar {
   progress: number | null
 }
 
-/** Builds the time row: play state, elapsed / total, and time left. */
+/**
+ * A text progress bar: "█" for played, "▒" for the rest. These block glyphs
+ * render on the G2 (the Even NowPlaying app uses them). They are wider than
+ * letters, so `width` should be about half the characters per row.
+ */
+export function textBar(progress: number, width: number): string {
+  const n = Math.max(4, width)
+  const filled = Math.round(Math.min(1, Math.max(0, progress)) * n)
+  return "█".repeat(filled) + "▒".repeat(n - filled)
+}
+
+/**
+ * Builds the time row: play state, elapsed / total, and time left.
+ * Live streams get a fixed label: a ticking clock there only causes redraws.
+ */
 export function buildTimeBar(m: BridgeMedia, positionMs: number): TimeBar {
   const icon = m.state === "playing" ? "▶" : m.state === "buffering" ? "…" : "❚❚"
   const dur = typeof m.duration === "number" ? m.duration : -1
   if (m.live || dur <= 0) {
-    return {text: positionMs >= 0 ? `${icon} LIVE  ${formatTime(positionMs)}` : `${icon} LIVE`, progress: null}
+    return {text: m.state === "playing" || m.state === "buffering" ? "● LIVE" : "❚❚ LIVE", progress: null}
   }
   const hours = dur >= 3_600_000
   const pos = Math.max(0, positionMs)

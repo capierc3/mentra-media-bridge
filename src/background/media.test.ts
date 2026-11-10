@@ -1,5 +1,5 @@
 import {describe, expect, test} from "bun:test"
-import {MediaClock, buildTimeBar, formatTime, hasTrack, sourceLine, truncate} from "./media"
+import {MediaClock, buildTimeBar, formatTime, hasTrack, sourceLine, textBar, truncate} from "./media"
 
 describe("formatTime", () => {
   test("minutes and seconds", () => {
@@ -65,8 +65,25 @@ describe("buildTimeBar", () => {
     expect(bar.text).toBe("❚❚ 1:00:00 / 2:00:00   -1:00:00")
   })
   test("live streams have no progress bar", () => {
-    const bar = buildTimeBar({state: "playing", duration: 0, live: true}, -1)
-    expect(bar).toEqual({text: "▶ LIVE", progress: null})
+    expect(buildTimeBar({state: "playing", duration: 0, live: true}, 5000)).toEqual({text: "● LIVE", progress: null})
+    expect(buildTimeBar({state: "paused", duration: -1}, 5000)).toEqual({text: "❚❚ LIVE", progress: null})
+  })
+
+  test("live label stays the same as time passes", () => {
+    const a = buildTimeBar({state: "playing", live: true}, 1000).text
+    const b = buildTimeBar({state: "playing", live: true}, 61_000).text
+    expect(a).toBe(b)
+  })
+})
+
+describe("textBar", () => {
+  test("fills by progress", () => {
+    expect(textBar(0, 10)).toBe("▒".repeat(10))
+    expect(textBar(0.5, 10)).toBe("█".repeat(5) + "▒".repeat(5))
+    expect(textBar(1, 10)).toBe("█".repeat(10))
+  })
+  test("clamps and keeps a minimum width", () => {
+    expect(textBar(2, 2)).toBe("█".repeat(4))
   })
 })
 
