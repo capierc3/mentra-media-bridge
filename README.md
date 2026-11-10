@@ -98,3 +98,8 @@ bun run build
   call audio.
 - Media Bridge transcribes English only.
 - The Mentra miniapp SDK is in beta (`@mentra/miniapp` 0.3.0-dev).
+
+## License
+
+MIT. See [LICENSE](LICENSE). Media Bridge itself is a separate project by
+TakeMotions, also MIT licensed.
