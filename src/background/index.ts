@@ -19,7 +19,14 @@ import {
   type State,
   type Stats,
 } from "../shared/channels"
-import {buildRows, type BridgeCaption} from "./captions"
+import {
+  NOTHING_HIDDEN,
+  buildRows,
+  markAll,
+  markStillValid,
+  type BridgeCaption,
+  type HiddenMark,
+} from "./captions"
 import {
   MediaClock,
   buildTimeBar,
@@ -279,15 +286,17 @@ registerMiniapp(async (session) => {
   let lastCaption: BridgeCaption | null = null
   /** When the caption text last changed (new line or new partial words). */
   let lastChangeAt = Date.now()
-  /** Lines up to this id were cleared after a quiet stretch and stay hidden. */
-  let hiddenUpToId = -1
+  /** Lines that were cleared after a quiet stretch and stay hidden. */
+  let hidden: HiddenMark = NOTHING_HIDDEN
   /** The in-progress words at the moment of clearing, also kept hidden. */
   let hiddenPartial = ""
 
-  function maxLineId(c: BridgeCaption | null): number {
-    let id = -1
-    for (const l of c?.lines ?? []) if (typeof l?.id === "number" && l.id > id) id = l.id
-    return id
+  /** Forget what was hidden, e.g. when the bridge's captions restart. */
+  function resetHidden(reason: string) {
+    if (hidden === NOTHING_HIDDEN && !hiddenPartial) return
+    hidden = NOTHING_HIDDEN
+    hiddenPartial = ""
+    console.log(`caption hiding reset: ${reason}`)
   }
 
   /** True once nothing new has come in for settings.clearAfterSec (0 = never clear). */
@@ -319,7 +328,7 @@ registerMiniapp(async (session) => {
         // Quiet for a while (audio paused, or a long gap): clear the captions and
         // keep the old text hidden, so only new speech shows when audio resumes.
         if (isIdle()) {
-          hiddenUpToId = Math.max(hiddenUpToId, maxLineId(lastCaption))
+          hidden = markAll(lastCaption)
           hiddenPartial = (lastCaption?.partial ?? "").trim()
           return ""
         }
@@ -335,13 +344,13 @@ registerMiniapp(async (session) => {
                 live: settings.mode === "live",
                 maxRows,
                 charsPerRow: settings.charsPerRow,
-                afterId: hiddenUpToId,
+                hidden,
               },
             )
           : []
         if (rows.length) return rows.join("\n")
         // Nothing new since a clear, or the track info already fills the screen: stay blank.
-        return hiddenUpToId >= 0 || hiddenPartial || mediaShowing ? "" : "Listening..."
+        return hidden !== NOTHING_HIDDEN || hiddenPartial || mediaShowing ? "" : "Listening..."
       }
     }
   }
@@ -417,6 +426,13 @@ registerMiniapp(async (session) => {
       if (changed) lastChangeAt = Date.now()
       stats.seq = seq
       stats.status = statusFrom(c)
+      // The bridge restarts its line numbering when captions restart; don't let
+      // an old "hide up to here" mark swallow the new lines.
+      if (stats.status === "stopped" || stats.status === "starting") {
+        resetHidden(`bridge captions ${stats.status}`)
+      } else if (!markStillValid(c, hidden)) {
+        resetHidden("bridge line numbers restarted")
+      }
       lastCaption = c
       // Even with no change we still recompose below, so the idle clear can fire.
     } catch (e) {
