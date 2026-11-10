@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/@mentra/miniapp-cli/schema/miniapp.schema.json",
+  "packageName": "com.brickroad.mediabridgecaptions",
+  "version": "0.1.0",
+  "name": "Media Bridge Captions",
+  "description": "Live captions for phone audio (podcasts, audiobooks, video) from the TakeMotions Media Bridge app.",
+  "icon": "icon.png",
+  "type": "standard",
+  "sdkVersion": "0.3.0",
+  "minHostVersion": "1.42.0",
+  "entry": {
+    "background": "background/index.js",
+    "ui": "ui/index.html"
+  },
+  "permissions": [],
+  "hardwareRequirements": [
+    { "type": "DISPLAY", "level": "REQUIRED", "description": "Shows the captions" },
+    { "type": "BUTTON", "level": "OPTIONAL", "description": "Press to pause or resume captions" }
+  ]
+}
