@@ -8,7 +8,8 @@
     "release": "mentra-miniapp release",
     "pack": "mentra-miniapp pack",
     "pack:win": "bun run scripts/pack-win.ts",
-    "release:win": "bun run scripts/pack-win.ts && mentra-miniapp release"
+    "release:win": "bun run scripts/pack-win.ts && mentra-miniapp release",
+    "pages": "bun run scripts/pack-win.ts && bun run scripts/publish-pages.ts https://capierc3.github.io/mentra-media-bridge"
   },
   "dependencies": {
     "@mentra/miniapp": "0.3.0-dev.0",
@@ -17,8 +18,10 @@
   },
   "devDependencies": {
     "@mentra/miniapp-cli": "0.1.0-dev.0",
+    "@types/qrcode": "1.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "qrcode": "1.5.4",
     "typescript": "^5.6.0"
   }
 }

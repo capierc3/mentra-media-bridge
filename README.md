@@ -45,6 +45,18 @@ A release build installs permanently and runs without the dev server.
 3. Scan the QR code it prints (same menu as above). Press Ctrl+C once the
    phone shows it installed.
 
+## Install page (GitHub Pages)
+
+Anyone with developer settings on in the Mentra app can install from
+<https://capierc3.github.io/mentra-media-bridge/>, with no PC involved.
+
+To publish a new version:
+
+1. Bump `version` in `miniapp.json`.
+2. `bun run pages`. This rebuilds the app and regenerates `docs/` (the
+   bundle, manifest, icon, and an install page with the QR code).
+3. Commit and push. GitHub Pages serves `docs/` from `main`.
+
 ## Using it
 
 - Captions start automatically. A short press on the glasses button pauses

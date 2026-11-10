@@ -11,8 +11,10 @@
       },
       "devDependencies": {
         "@mentra/miniapp-cli": "0.1.0-dev.0",
+        "@types/qrcode": "1.5.5",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
+        "qrcode": "1.5.4",
         "typescript": "^5.6.0",
       },
     },
@@ -27,6 +29,10 @@
     "@mentra/miniapp-cli": ["@mentra/miniapp-cli@0.1.0-dev.0", "", { "dependencies": { "@clack/prompts": "^1.2.0", "jszip": "^3.10.1", "qrcode": "^1.5.4" }, "bin": { "mentra-miniapp": "src/index.ts" } }, "sha512-yR5Zml5uYZqaiKSHYC3/5LKSyn2Ql3W/yAhCVL7iydAqEE+ppw25FEclnl4F45gI9X9ybzGs/ZdM5sm/tTNnJw=="],
 
     "@mentra/types": ["@mentra/types@1.0.0-beta.2", "", {}, "sha512-yn0H7oYId8TSOGlSDmstds4nnmZbXyDncFy3FC1h4dWpDx6o4BmBehAJd2Otp9gr1bWwIL0yEp6JK60I8TBUGw=="],
+
+    "@types/node": ["@types/node@26.6.6", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog=="],
+
+    "@types/qrcode": ["@types/qrcode@1.5.5", "", { "dependencies": { "@types/node": "*" } }, "sha512-CdfBi/e3Qk+3Z/fXYShipBT13OJ2fDO2Q2w5CIP5anLTLIndQG9z6P1cnm+8zCWSpm5dnxMFd/uREtb0EXuQzg=="],
 
     "@types/react": ["@types/react@19.3.0", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg=="],
 
@@ -123,6 +129,8 @@
     "strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
 
     "util-deprecate": ["util-deprecate@1.0.2", "", {}, "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="],
 
