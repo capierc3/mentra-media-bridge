@@ -30,8 +30,11 @@ phone audio → Media Bridge (Android, on-device speech-to-text)
 ## Captions from a Windows PC
 
 The miniapp can also caption audio playing on a Windows 11 PC, using Windows'
-built-in Live Captions. Run [`pc-bridge`](pc-bridge/) on the PC (a system
-tray app: the CC icon by the clock), then in the miniapp set **Source → PC**
+built-in Live Captions. Run PC Caption Bridge on the PC (download
+`PcCaptionBridge.exe` from the
+[latest release](https://github.com/capierc3/mentra-media-bridge/releases/latest),
+or build [`pc-bridge`](pc-bridge/); it's a system tray app, the CC icon by
+the clock), then in the miniapp set **Source → PC**
 and enter the PC address from its tray menu. Phone and PC must be on the same Wi-Fi, or connected over
 USB with `adb reverse` (then leave the source on **Phone**). See
 [pc-bridge/README.md](pc-bridge/README.md).

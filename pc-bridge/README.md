@@ -16,7 +16,15 @@ PC audio → Windows Live Captions (Win+Ctrl+L)
 Needs Windows 11 22H2 or newer (for Live Captions) and the
 [.NET 10 runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
 
-## Run it
+## Download
+
+Get **PcCaptionBridge.exe** from the
+[latest release](https://github.com/capierc3/mentra-media-bridge/releases/latest)
+and double-click it. Windows SmartScreen may warn because it isn't signed:
+choose **More info → Run anyway**. If the .NET 10 Desktop Runtime is missing,
+Windows offers to download it.
+
+## Build it yourself
 
 Build the app (one .exe):
 

@@ -82,6 +82,8 @@ writeFileSync(
   a.button { display:block; text-align:center; background:var(--accent); color:#fff; text-decoration:none; padding:12px; border-radius:10px; font-weight:600; }
   ol, ul { padding-left:1.2em; } li { margin:6px 0; }
   code { font-size:.9em; }
+  a.button.secondary { background:transparent; color:var(--accent); border:1.5px solid var(--accent); margin:10px 0 6px; padding:10px; }
+  .small { font-size:.85em; }
 </style>
 </head>
 <body>
@@ -111,7 +113,10 @@ writeFileSync(
             Turn on <b>Captions</b>, and <b>Enable media bridge</b> for track info and time.</li>
           <li><b>PC</b>: audio playing on a Windows 11 PC, through Windows Live Captions and
             <a href="${esc(repoUrl)}/tree/main/pc-bridge">PC Caption Bridge</a> (a tray app on the PC).
-            Enter the PC address from its tray menu. Phone and PC on the same Wi-Fi.</li>
+            Enter the PC address from its tray menu. Phone and PC on the same Wi-Fi.
+            <a class="button secondary" href="${esc(repoUrl)}/releases/latest/download/PcCaptionBridge.exe">Download PC Caption Bridge (Windows)</a>
+            <span class="muted small">Needs the <a href="https://dotnet.microsoft.com/download/dotnet/10.0">.NET 10 Desktop Runtime</a>.
+            <a href="${esc(repoUrl)}/releases/latest">Release notes</a>.</span></li>
         </ul>
       </li>
     </ol>
