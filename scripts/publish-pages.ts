@@ -37,6 +37,10 @@ if (!existsSync(zip)) {
   process.exit(1)
 }
 
+// https://<user>.github.io/<repo> → https://github.com/<user>/<repo>
+const [, ghUser, ghRepo] = baseUrl.match(/^https:\/\/([^.]+)\.github\.io\/(.+)$/)!
+const repoUrl = `https://github.com/${ghUser}/${ghRepo}`
+
 const installUrl =
   `miniapp://release?url=${encodeURIComponent(baseUrl)}` +
   `&package=${encodeURIComponent(packageName)}` +
@@ -76,7 +80,7 @@ writeFileSync(
   .qr { background:#fff; border-radius:12px; padding:8px; max-width:320px; margin:12px auto; }
   .qr svg { display:block; width:100%; height:auto; }
   a.button { display:block; text-align:center; background:var(--accent); color:#fff; text-decoration:none; padding:12px; border-radius:10px; font-weight:600; }
-  ol { padding-left:1.2em; } li { margin:6px 0; }
+  ol, ul { padding-left:1.2em; } li { margin:6px 0; }
   code { font-size:.9em; }
 </style>
 </head>
@@ -99,10 +103,17 @@ writeFileSync(
   <div class="card">
     <strong>You also need</strong>
     <ol>
-      <li>An Android 12+ phone with the
-        <a href="https://github.com/r-tkbyc/takemotions-media-bridge">TakeMotions Media Bridge</a> app.
-        Turn on <b>Captions</b>, and <b>Enable media bridge</b> for track info and time.</li>
       <li>Display glasses connected to the Mentra app (built for Even Realities G2).</li>
+      <li>A caption source. Pick it in the miniapp under <b>Source</b>:
+        <ul>
+          <li><b>Phone</b>: audio playing on an Android 12+ phone, through the
+            <a href="https://github.com/r-tkbyc/takemotions-media-bridge">TakeMotions Media Bridge</a> app.
+            Turn on <b>Captions</b>, and <b>Enable media bridge</b> for track info and time.</li>
+          <li><b>PC</b>: audio playing on a Windows 11 PC, through Windows Live Captions and
+            <a href="${esc(repoUrl)}/tree/main/pc-bridge">PC Caption Bridge</a> (a tray app on the PC).
+            Enter the PC address from its tray menu. Phone and PC on the same Wi-Fi.</li>
+        </ul>
+      </li>
     </ol>
   </div>
 </main>

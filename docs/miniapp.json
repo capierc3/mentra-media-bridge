@@ -1,9 +1,9 @@
 {
   "$schema": "./node_modules/@mentra/miniapp-cli/schema/miniapp.schema.json",
   "packageName": "com.brickroad.mediabridgecaptions",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "Media Bridge Captions",
-  "description": "Live captions for phone audio (podcasts, audiobooks, video) from the TakeMotions Media Bridge app.",
+  "description": "Live captions on your glasses for audio on your Android phone (TakeMotions Media Bridge) or Windows PC (Live Captions): podcasts, audiobooks, video.",
   "icon": "icon.png",
   "type": "standard",
   "sdkVersion": "0.3.0",
