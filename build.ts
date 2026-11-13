@@ -29,12 +29,14 @@
  */
 
 import {rm} from "fs/promises"
+import {resolve} from "path"
 import {reactSingletonPlugin} from "@mentra/miniapp-cli/build-helpers"
 
 const distDir = "./dist"
 
 // Wipe dist/ so old chunks don't accumulate across builds.
-await rm(distDir, {recursive: true, force: true})
+// Absolute path: Bun 1.4 on Windows silently skips a recursive rm of a relative path.
+await rm(resolve(import.meta.dir, distDir), {recursive: true, force: true})
 
 // Pick up MENTRA_PUBLIC_* env vars from the shell / .env. Bun loads .env
 // from cwd automatically; we just need to forward the keys to define.
