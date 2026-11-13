@@ -27,6 +27,15 @@ phone audio → Media Bridge (Android, on-device speech-to-text)
    the same Wi-Fi. Or, with the phone plugged in over USB and `adb` installed, run
    `bun dev --usb`.
 
+## Captions from a Windows PC
+
+The miniapp can also caption audio playing on a Windows 11 PC, using Windows'
+built-in Live Captions. Run [`pc-bridge`](pc-bridge/) on the PC (a system
+tray app: the CC icon by the clock), then in the miniapp set **Source → PC**
+and enter the PC address from its tray menu. Phone and PC must be on the same Wi-Fi, or connected over
+USB with `adb reverse` (then leave the source on **Phone**). See
+[pc-bridge/README.md](pc-bridge/README.md).
+
 ## Installing on the phone (no PC needed afterwards)
 
 A release build installs permanently and runs without the dev server.
@@ -79,6 +88,7 @@ To publish a new version:
 | `src/shared/channels.ts` | Settings, stats and the messages between background and phone screen |
 | `src/ui/App.tsx` | Phone settings and diagnostics screen |
 | `miniapp.json` | Manifest |
+| `pc-bridge/` | Windows companion: serves Live Captions in the Media Bridge format |
 
 ## Scripts
 

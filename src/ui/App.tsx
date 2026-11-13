@@ -1,5 +1,5 @@
 import {useEffect, useState, type JSX} from "react"
-import type {BridgeStatus, MediaStatus, Settings, State} from "../shared/channels"
+import {captionUrl, type BridgeStatus, type MediaStatus, type Settings, type State} from "../shared/channels"
 
 const MEDIA_TEXT: Record<MediaStatus, string> = {
   unused: "Not used",
@@ -26,9 +26,20 @@ const STATUS_TEXT: Record<BridgeStatus, string> = {
   connecting: "Connecting to Media Bridge…",
   unreachable: "Can't reach Media Bridge",
   stopped: "Media Bridge is running, but captions are off there",
+  sourcePaused: "Paused on the PC (tray icon → Resume captions)",
   starting: "Media Bridge is starting captions…",
   silent: "Listening (nothing heard lately)",
   ok: "Captioning",
+}
+
+const PC_STATUS_TEXT: Partial<Record<BridgeStatus, string>> = {
+  connecting: "Connecting to the PC…",
+  unreachable: "Can't reach the PC",
+  stopped: "PC Caption Bridge is running, but Live Captions is closed (Win+Ctrl+L)",
+}
+
+function statusText(status: BridgeStatus, s: Settings): string {
+  return (s.source === "pc" ? PC_STATUS_TEXT[status] : undefined) ?? STATUS_TEXT[status]
 }
 
 const GOOD: BridgeStatus[] = ["ok", "silent"]
@@ -94,10 +105,16 @@ export function App(): JSX.Element {
       <section className="card">
         <div className="row">
           <span className={`dot ${good ? "good" : stats.status === "paused" ? "" : "bad"}`} />
-          <strong>{STATUS_TEXT[stats.status]}</strong>
+          <strong>{statusText(stats.status, s)}</strong>
         </div>
         {stats.lastError ? <p className="error">Last error: {stats.lastError}</p> : null}
-        {stats.status === "unreachable" ? (
+        {stats.status === "unreachable" && s.source === "pc" ? (
+          <p className="hint">
+            Make sure PC Caption Bridge is running on the PC, the address below matches one it prints,
+            and the phone is on the same Wi-Fi. Windows Firewall must allow it (it asks the first time).
+          </p>
+        ) : null}
+        {stats.status === "unreachable" && s.source === "phone" ? (
           <p className="hint">
             Make sure the Media Bridge app is installed and its Captions switch is on. If it is on and
             this still fails, the Mentra app may be blocking local http requests. Note the error above.
@@ -112,6 +129,51 @@ export function App(): JSX.Element {
           {s.enabled ? "Pause captions" : "Resume captions"}
         </button>
         <p className="hint">You can also short-press the glasses button to pause or resume.</p>
+      </section>
+
+      <section className="card">
+        <h2>Source</h2>
+        <div className="segmented">
+          <button
+            type="button"
+            className={s.source === "phone" ? "active" : ""}
+            onClick={() => set({source: "phone"})}
+          >
+            Phone
+          </button>
+          <button
+            type="button"
+            className={s.source === "pc" ? "active" : ""}
+            onClick={() => set({source: "pc"})}
+          >
+            PC
+          </button>
+        </div>
+        {s.source === "pc" ? (
+          <>
+            <label className="field">
+              <span className="field-label">PC address</span>
+              <input
+                key="pcHost"
+                type="text"
+                inputMode="decimal"
+                placeholder="e.g. 192.168.1.20"
+                defaultValue={s.pcHost}
+                onBlur={(e) => set({pcHost: e.target.value})}
+              />
+            </label>
+            <p className="hint">
+              Captions from Windows Live Captions, through PC Caption Bridge running on the PC. Use one of
+              the addresses it prints. Phone and PC must be on the same Wi-Fi.
+            </p>
+          </>
+        ) : (
+          <p className="hint">
+            Captions from the Media Bridge app on this phone. Also use this for a PC plugged in over USB
+            with adb reverse.
+          </p>
+        )}
+        <p className="hint">Checking {captionUrl(s)}</p>
       </section>
 
       <section className="card">
@@ -153,7 +215,9 @@ export function App(): JSX.Element {
           checked={s.showTimeBar}
           onChange={(v) => set({showTimeBar: v})}
         />
-        {(s.showTrackInfo || s.showTimeBar) && (stats.mediaStatus === "off" || stats.mediaStatus === "unreachable") ? (
+        {s.source === "phone" &&
+        (s.showTrackInfo || s.showTimeBar) &&
+        (stats.mediaStatus === "off" || stats.mediaStatus === "unreachable") ? (
           <p className="error">
             {MEDIA_TEXT[stats.mediaStatus]}. Turn on "Enable media bridge" in the Media Bridge app (it needs
             notification access).
@@ -255,7 +319,7 @@ export function App(): JSX.Element {
           </dd>
         </dl>
         <label className="field">
-          <span className="field-label">Bridge address</span>
+          <span className="field-label">Phone bridge address</span>
           <input
             type="text"
             defaultValue={s.bridgeUrl}

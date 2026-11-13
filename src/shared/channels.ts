@@ -6,6 +6,17 @@
 /** "live" shows words still being recognized; "lines" shows finished lines only. */
 export type CaptionMode = "live" | "lines"
 
+/**
+ * Where captions come from:
+ * - "phone": the Media Bridge Android app on this phone (127.0.0.1).
+ *   Also used for a PC connected over USB with `adb reverse`.
+ * - "pc": the PC Caption Bridge (Windows Live Captions) at `pcHost` on the local network.
+ */
+export type CaptionSource = "phone" | "pc"
+
+export const CAPTION_PORT = 8767
+export const MEDIA_PORT = 8766
+
 export interface Settings {
   /** Master switch. When false the app stops checking the bridge and clears the glasses. */
   enabled: boolean
@@ -24,10 +35,37 @@ export interface Settings {
   showTrackInfo: boolean
   /** Show elapsed / total / remaining time and a progress bar at the bottom. */
   showTimeBar: boolean
-  /** Bridge caption endpoint. */
+  source: CaptionSource
+  /** The PC's address on the local network, e.g. "192.168.1.20". Used when source is "pc". */
+  pcHost: string
+  /** Phone bridge caption endpoint. */
   bridgeUrl: string
-  /** Bridge now-playing endpoint. */
+  /** Phone bridge now-playing endpoint. */
   mediaUrl: string
+}
+
+/** Cleans up what was typed into the PC address box: drops http://, paths and a port. */
+export function cleanHost(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^[a-z]+:\/\//i, "")
+    .replace(/\/.*$/, "")
+    .replace(/:\d+$/, "")
+}
+
+/** The caption URL actually polled for these settings. */
+export function captionUrl(s: Settings): string {
+  return s.source === "pc" ? `http://${cleanHost(s.pcHost)}:${CAPTION_PORT}/caption` : s.bridgeUrl
+}
+
+/** The now-playing URL actually polled for these settings. */
+export function nowPlayingUrl(s: Settings): string {
+  return s.source === "pc" ? `http://${cleanHost(s.pcHost)}:${MEDIA_PORT}/media` : s.mediaUrl
+}
+
+/** What to call the caption source in messages. */
+export function sourceName(s: Settings): string {
+  return s.source === "pc" ? "the PC" : "Media Bridge"
 }
 
 /** What the bridge's media feed (port 8766) is telling us. */
@@ -48,6 +86,8 @@ export const DEFAULT_SETTINGS: Settings = {
   clearAfterSec: 8,
   showTrackInfo: true,
   showTimeBar: true,
+  source: "phone",
+  pcHost: "",
   bridgeUrl: "http://127.0.0.1:8767/caption",
   mediaUrl: "http://127.0.0.1:8766/media",
 }
@@ -58,6 +98,7 @@ export type BridgeStatus =
   | "connecting" // no answer yet
   | "unreachable" // fetch failed (bridge not running, or blocked)
   | "stopped" // bridge is up but captions are off there
+  | "sourcePaused" // paused on the PC (tray menu: Pause captions)
   | "starting" // bridge is loading the speech model
   | "silent" // running, nothing heard lately
   | "ok"

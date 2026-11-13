@@ -1,9 +1,11 @@
 /**
  * Background (glasses) side of Media Bridge Captions.
  *
- * Checks the TakeMotions Media Bridge Android app on a timer:
- *   - captions:     http://127.0.0.1:8767/caption
- *   - now playing:  http://127.0.0.1:8766/media
+ * Checks a caption bridge on a timer, either the TakeMotions Media Bridge
+ * Android app on this phone or the PC Caption Bridge (Windows Live Captions)
+ * on the local network. Both speak the same format:
+ *   - captions:     http://<host>:8767/caption
+ *   - now playing:  http://<host>:8766/media
  * and draws the track title and source, captions, and a time bar on the
  * glasses. Runs whenever the Mentra app is alive, whether or not the phone
  * settings screen is open.
@@ -18,6 +20,10 @@ import {
   type Settings,
   type State,
   type Stats,
+  captionUrl,
+  cleanHost,
+  nowPlayingUrl,
+  sourceName,
 } from "../shared/channels"
 import {
   NOTHING_HIDDEN,
@@ -77,6 +83,8 @@ function clampSettings(s: Settings): Settings {
     clearAfterSec: clamp(s.clearAfterSec, 0, 120, DEFAULT_SETTINGS.clearAfterSec),
     showTrackInfo: s.showTrackInfo !== false,
     showTimeBar: s.showTimeBar !== false,
+    source: s.source === "pc" ? "pc" : "phone",
+    pcHost: typeof s.pcHost === "string" ? cleanHost(s.pcHost) : "",
     bridgeUrl: url(s.bridgeUrl, DEFAULT_SETTINGS.bridgeUrl),
     mediaUrl: url(s.mediaUrl, DEFAULT_SETTINGS.mediaUrl),
   }
@@ -307,6 +315,7 @@ registerMiniapp(async (session) => {
   function statusFrom(c: BridgeCaption): BridgeStatus {
     const s = c.status
     if (s === "starting" || s === "ok" || s === "silent" || s === "stopped") return s
+    if (s === "paused") return "sourcePaused"
     return c.running ? "ok" : "stopped"
   }
 
@@ -316,11 +325,17 @@ registerMiniapp(async (session) => {
       case "paused":
         return ""
       case "connecting":
-        return "Captions: connecting to Media Bridge..."
+        return `Captions: connecting to ${sourceName(settings)}...`
       case "unreachable":
-        return "Media Bridge not reachable.\nOpen Media Bridge and turn on Captions."
+        return settings.source === "pc"
+          ? "PC not reachable.\nStart PC Caption Bridge and check the PC address."
+          : "Media Bridge not reachable.\nOpen Media Bridge and turn on Captions."
+      case "sourcePaused":
+        return "Captions paused on the PC."
       case "stopped":
-        return "Captions are off.\nTurn them on in Media Bridge."
+        return settings.source === "pc"
+          ? "Live Captions is closed on the PC.\nPress Win+Ctrl+L there."
+          : "Captions are off.\nTurn them on in Media Bridge."
       case "starting":
         return "Captions: starting..."
       case "silent":
@@ -410,7 +425,8 @@ registerMiniapp(async (session) => {
     stats.polls++
     const started = Date.now()
     try {
-      const c = (await fetchJson(settings.bridgeUrl)) as BridgeCaption
+      if (settings.source === "pc" && !settings.pcHost) throw new Error("no PC address set")
+      const c = (await fetchJson(captionUrl(settings))) as BridgeCaption
       stats.lastFetchMs = Date.now() - started
       stats.lastError = null
       stats.silentForSec = typeof c.silentForSec === "number" ? c.silentForSec : 0
@@ -428,7 +444,7 @@ registerMiniapp(async (session) => {
       stats.status = statusFrom(c)
       // The bridge restarts its line numbering when captions restart; don't let
       // an old "hide up to here" mark swallow the new lines.
-      if (stats.status === "stopped" || stats.status === "starting") {
+      if (stats.status === "stopped" || stats.status === "starting" || stats.status === "sourcePaused") {
         resetHidden(`bridge captions ${stats.status}`)
       } else if (!markStillValid(c, hidden)) {
         resetHidden("bridge line numbers restarted")
@@ -471,7 +487,8 @@ registerMiniapp(async (session) => {
     }
     const now = Date.now()
     try {
-      const m = (await fetchJson(settings.mediaUrl)) as BridgeMedia
+      if (settings.source === "pc" && !settings.pcHost) throw new Error("no PC address set")
+      const m = (await fetchJson(nowPlayingUrl(settings))) as BridgeMedia
       stats.mediaError = null
       stats.mediaStatus = m.enabled === false ? "off" : hasTrack(m) ? "ok" : "none"
       if (!hasTrack(m) && holdLastMedia(now)) return
@@ -544,7 +561,16 @@ registerMiniapp(async (session) => {
   // ---- phone settings screen ---------------------------------------------
   function applySettings(next: Settings) {
     const wasEnabled = settings.enabled
+    const oldUrl = captionUrl(settings)
     settings = next
+    if (captionUrl(settings) !== oldUrl) {
+      // A different bridge: its line numbers and clock have nothing to do with the old one's.
+      resetHidden("caption source changed")
+      lastCaption = null
+      stats.seq = -1
+      if (settings.enabled) stats.status = "connecting"
+      clock.update(null, Date.now())
+    }
     void saveSettings()
     if (settings.enabled !== wasEnabled) applyEnabled()
     else refresh() // re-layout with the new settings right away
@@ -559,6 +585,6 @@ registerMiniapp(async (session) => {
   // Keep the phone screen's numbers fresh while it is open.
   setInterval(pushState, 1000)
 
-  console.log(`Media Bridge Captions started: ${settings.bridgeUrl}, mode=${settings.mode}`)
+  console.log(`Media Bridge Captions started: ${captionUrl(settings)}, mode=${settings.mode}`)
   applyEnabled()
 })
